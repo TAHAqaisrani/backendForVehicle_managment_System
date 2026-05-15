@@ -1,10 +1,19 @@
-import { Router } from 'express';
-import { register, login, getMe, demoLogin } from '../controllers/authController.js';
-import { authenticate } from '../middleware/auth.js';
+import jwt from 'jsonwebtoken';
 
-const router = Router();
-router.post('/register', register);
-router.post('/login', login);
-router.post('/demo', demoLogin);
-router.get('/me', authenticate, getMe);
-export default router;
+export const authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
